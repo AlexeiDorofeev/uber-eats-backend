@@ -32,5 +32,7 @@ export class UsersResolver {
   }
 
   @Query(() => User)
-  me() {}
+  me() {
+    return User;
+  }
 }
