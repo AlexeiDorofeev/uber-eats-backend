@@ -15,9 +15,7 @@ export class MailService {
     form.append('to', `dorofeev86@yahoo.com`);
     form.append('subject', subject);
     form.append('template', template);
-    form.append('v:code', 'werw');
-    form.append('v:username', 'alex');
-    emailVars.forEach((eVar) => form.append(eVar.key, eVar.value));
+    emailVars.forEach((eVar) => form.append(`v:${eVar.key}`, eVar.value));
 
     try {
       await got(`https://api.mailgun.net/v3/${this.options.domain}/messages`, {
@@ -30,5 +28,12 @@ export class MailService {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  sendVerificationEmail(email: string, code: string) {
+    this.sendEmail('Verify Your Email', 'verify-email', [
+      { key: 'code', value: code },
+      { key: 'username', value: email },
+    ]);
   }
 }
