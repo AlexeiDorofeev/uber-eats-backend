@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { CreateAccountInput } from './dtos/create-account.dto';
-import { Logininput } from './dtos/login.dto';
+import { Logininput, LoginOutput } from './dtos/login.dto';
 import { User } from './entities/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/jwt/jwt.service';
@@ -45,10 +45,7 @@ export class UsersService {
     }
   }
 
-  async login({
-    email,
-    password,
-  }: Logininput): Promise<{ ok: boolean; error?: string; token?: string }> {
+  async login({ email, password }: Logininput): Promise<LoginOutput> {
     try {
       const user = await this.users.findOne({ email }, { select: ['id', 'password'] });
       if (!user) {
@@ -56,12 +53,12 @@ export class UsersService {
       }
       const passwordCorrect = await user.checkPassword(password);
       if (!passwordCorrect) {
-        return { ok: false, error: 'Wrong password.' };
+        return { ok: false, error: 'Wrong password' };
       }
-      const token = jwt.sign({ id: user.id }, this.config.get('PRIVATE_KEY'));
+      const token = this.jwtService.sign(user.id);
       return { ok: true, token };
     } catch (error) {
-      return { ok: false, error };
+      return { ok: false, error: "Can't log user in." };
     }
   }
 
@@ -90,11 +87,11 @@ export class UsersService {
         verification.user.verified = true;
         await this.users.save(verification.user);
         await this.verifications.delete(verification.id);
-        return { ok: false };
+        return { ok: true };
       }
       return { ok: false, error: 'Verification not found.' };
     } catch (error) {
-      return { ok: false, error };
+      return { ok: false, error: 'Could not verify email.' };
     }
   }
 }

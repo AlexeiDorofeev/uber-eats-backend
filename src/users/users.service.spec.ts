@@ -1,12 +1,12 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { JwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
 import { UsersService } from './users.service';
+import { JwtService } from '../jwt/jwt.service';
 
 const mockRepository = () => ({
   findOne: jest.fn(),
@@ -15,7 +15,7 @@ const mockRepository = () => ({
 });
 
 const mockJwtService = {
-  sign: jest.fn(),
+  sign: jest.fn(() => 'signed-token'),
   verify: jest.fn(),
 };
 
@@ -30,6 +30,7 @@ describe('UsersService', () => {
   let usersRepository: MockRepository<User>;
   let verificationsRepository: MockRepository<Verification>;
   let mailService: MailService;
+  let jwtService: JwtService;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -56,6 +57,7 @@ describe('UsersService', () => {
     }).compile();
     service = module.get<UsersService>(UsersService);
     mailService = module.get<MailService>(MailService);
+    jwtService = module.get<JwtService>(JwtService);
     usersRepository = module.get(getRepositoryToken(User));
     verificationsRepository = module.get(getRepositoryToken(Verification));
   });
@@ -66,14 +68,14 @@ describe('UsersService', () => {
 
   describe('createAccount', () => {
     const createAccountArgs = {
-      email: '',
-      password: '',
+      email: 'dorofeev86@yahoo.com',
+      password: '12345',
       role: 0,
     };
     it('should fail if user exists', async () => {
       usersRepository.findOne.mockResolvedValue({
         id: 1,
-        email: 'lalalala',
+        email: 'dorofeev86@yahoo.com',
       });
       const result = await service.createAccount(createAccountArgs);
       expect(result).toMatchObject({
@@ -92,6 +94,7 @@ describe('UsersService', () => {
       });
 
       const result = await service.createAccount(createAccountArgs);
+
       expect(usersRepository.create).toHaveBeenCalledTimes(1);
       expect(usersRepository.create).toHaveBeenCalledWith(createAccountArgs);
 
@@ -133,6 +136,27 @@ describe('UsersService', () => {
       expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
       expect(usersRepository.findOne).toHaveBeenCalledWith(expect.any(Object), expect.any(Object));
       expect(result).toEqual({ ok: false, error: 'User not found.' });
+    });
+
+    it('should fail is the password is wrong', async () => {
+      const mockedUser = {
+        checkPassword: jest.fn(() => Promise.resolve(false)),
+      };
+      usersRepository.findOne.mockResolvedValue(mockedUser);
+      const result = await service.login(loginArgs);
+      expect(result).toEqual({ ok: false, error: 'Wrong password' });
+    });
+
+    it('should return token if password correct', async () => {
+      const mockedUser = {
+        id: 1,
+        checkPassword: jest.fn(() => Promise.resolve(true)),
+      };
+      usersRepository.findOne.mockResolvedValue(mockedUser);
+      const result = await service.login(loginArgs);
+      expect(jwtService.sign).toHaveBeenCalledTimes(1);
+      expect(jwtService.sign).toHaveBeenCalledWith(expect.any(Number));
+      expect(result).toEqual({ ok: true, token: 'signed-token' });
     });
   });
   it.todo('findById');
