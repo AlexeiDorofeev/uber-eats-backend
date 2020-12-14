@@ -46,21 +46,7 @@ export class UsersResolver {
   @UseGuards(AuthGuard)
   @Query(() => UserProfileOutput)
   async userProfile(@Args() userProfileInput: UserProfileInput): Promise<UserProfileOutput> {
-    try {
-      const user = await this.usersService.findById(userProfileInput.userId);
-      if (!user) {
-        throw Error();
-      }
-      return {
-        ok: true,
-        user,
-      };
-    } catch (e) {
-      return {
-        error: 'User not found',
-        ok: false,
-      };
-    }
+    return this.usersService.findById(userProfileInput.userId);
   }
 
   @UseGuards(AuthGuard)
@@ -78,17 +64,7 @@ export class UsersResolver {
   }
 
   @Mutation(() => VerifyEmailOutput)
-  async verifyEmail(@Args('input') { code }: VerifyEmailInput): Promise<VerifyEmailOutput> {
-    try {
-      await this.usersService.verifyEmail(code);
-      return {
-        ok: true,
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        error,
-      };
-    }
+  verifyEmail(@Args('input') { code }: VerifyEmailInput): Promise<VerifyEmailOutput> {
+    return this.usersService.verifyEmail(code);
   }
 }
