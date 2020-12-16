@@ -7,6 +7,8 @@ import { User } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
 import { UsersService } from './users.service';
 import { JwtService } from '../jwt/jwt.service';
+import { ObjectType } from '@nestjs/graphql';
+import { truncate } from 'fs';
 
 const mockRepository = () => ({
   findOne: jest.fn(),
@@ -16,14 +18,14 @@ const mockRepository = () => ({
   delete: jest.fn(),
 });
 
-const mockJwtService = {
+const mockJwtService = () => ({
   sign: jest.fn(() => 'signed-token'),
   verify: jest.fn(),
-};
+});
 
-const mockMailService = {
+const mockMailService = () => ({
   sendVerificationEmail: jest.fn(),
-};
+});
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -48,11 +50,11 @@ describe('UsersService', () => {
         },
         {
           provide: JwtService,
-          useValue: mockJwtService,
+          useValue: mockJwtService(),
         },
         {
           provide: MailService,
-          useValue: mockMailService,
+          useValue: mockMailService(),
         },
       ],
       imports: [ConfigModule],
@@ -216,6 +218,61 @@ describe('UsersService', () => {
         newVerification.code
       );
     });
+
+    it('should change password', async () => {
+      const editProfileArgs = {
+        userId: 1,
+        input: {
+          password: '1234567',
+        },
+      };
+      usersRepository.findOne.mockResolvedValue({ password: 'old' });
+      const result = await service.editProfile(editProfileArgs.userId, editProfileArgs.input);
+      expect(usersRepository.save).toHaveBeenCalledTimes(1);
+      expect(usersRepository.save).toHaveBeenCalledWith(editProfileArgs.input);
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('should fail on exception', async () => {
+      usersRepository.findOne.mockRejectedValue(new Error());
+      const result = await service.editProfile(1, { email: '12' });
+      expect(result).toEqual({ ok: false, error: 'Could not update profile.' });
+    });
   });
-  it.todo('verifyEmail');
+
+  describe('verifyEmail', () => {
+    it('should verify email', async () => {
+      const mockedVerification = {
+        user: {
+          verified: false,
+        },
+        id: 1,
+      };
+      verificationsRepository.findOne.mockResolvedValue(mockedVerification);
+
+      const result = await service.verifyEmail('');
+
+      expect(verificationsRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(verificationsRepository.findOne).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Object)
+      );
+      expect(usersRepository.save).toHaveBeenCalledTimes(1);
+      expect(usersRepository.save).toHaveBeenCalledWith({ verified: true });
+
+      expect(verificationsRepository.delete).toHaveBeenCalledTimes(1);
+      expect(verificationsRepository.delete).toHaveBeenCalledWith(mockedVerification.id);
+      expect(result).toEqual({ ok: true });
+    });
+    it('should fail on verification not found', async () => {
+      verificationsRepository.findOne.mockResolvedValue(undefined);
+      const result = await service.verifyEmail('');
+      expect(result).toEqual({ ok: false, error: 'Verification not found.' });
+    });
+    it('should fail on exception', async () => {
+      verificationsRepository.findOne.mockRejectedValue(new Error());
+      const result = await service.verifyEmail('');
+      expect(result).toEqual({ ok: false, error: 'Could not verify email.' });
+    });
+  });
 });
