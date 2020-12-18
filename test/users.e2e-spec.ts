@@ -1,12 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
-import { getConnection, Repository } from 'typeorm';
-import * as request from 'supertest';
-import { User } from 'src/users/entities/user.entity';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { setEmitFlags } from 'typescript';
+import { User } from 'src/users/entities/user.entity';
 import { Verification } from 'src/users/entities/verification.entity';
+import * as request from 'supertest';
+import { getConnection, Repository } from 'typeorm';
+import { AppModule } from '../src/app.module';
 
 jest.mock('got', () => {
   return {
@@ -26,6 +25,10 @@ describe('UserModule (e2e)', () => {
   let usersRepository: Repository<User>;
   let verificationsRepository: Repository<Verification>;
   let jwtToken: string;
+
+  const baseTest = () => request(app.getHttpServer()).post(GRAPHQL_ENDPOINT);
+  const publicTest = (query: string) => baseTest().send({ query });
+  const privateTest = (query: string) => baseTest().set('X-JWT', jwtToken).send({ query });
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -47,10 +50,7 @@ describe('UserModule (e2e)', () => {
 
   describe('createAccount', () => {
     it('should create account', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
           createAccount(
             input: { email: "${testUser.email}", password: "${testUser.password}", role: Client }
           ) {
@@ -58,8 +58,7 @@ describe('UserModule (e2e)', () => {
             ok
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           expect(res.body.data.createAccount.ok).toBe(true);
@@ -68,10 +67,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should fail if account already exists', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
         createAccount(
           input: { email: "${testUser.email}", password: "123", role: Client }
         ) {
@@ -79,8 +75,7 @@ describe('UserModule (e2e)', () => {
           ok
         }
       }
-      `,
-        })
+      `)
         .expect(200)
         .expect((res) => {
           expect(res.body.data.createAccount.ok).toBe(false);
@@ -91,18 +86,14 @@ describe('UserModule (e2e)', () => {
 
   describe('login', () => {
     it('should be able to login with correct credentials', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
           login(input: { email: "${testUser.email}", password: "${testUser.password}" }) {
             error
             ok
             token
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -118,18 +109,14 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should not be able to login with wrong credentials', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
           login(input: { email: "${testUser.email}", password: "567" }) {
             error
             ok
             token
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -151,11 +138,7 @@ describe('UserModule (e2e)', () => {
       userId = user.id;
     });
     it('should see a user profile', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .set('X-JWT', jwtToken)
-        .send({
-          query: `{
+      return privateTest(`{
           userProfile(userId: ${userId}) {
             ok
             error
@@ -164,8 +147,7 @@ describe('UserModule (e2e)', () => {
             }
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -185,11 +167,7 @@ describe('UserModule (e2e)', () => {
         });
     });
     it('should not find a profile', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .set('X-JWT', jwtToken)
-        .send({
-          query: `
+      return privateTest(`
           {
             userProfile(userId:666){
               ok
@@ -199,8 +177,7 @@ describe('UserModule (e2e)', () => {
               }
             }
           }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -219,17 +196,12 @@ describe('UserModule (e2e)', () => {
 
   describe('me', () => {
     it('should find my profile', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .set('X-JWT', jwtToken)
-        .send({
-          query: `{
+      return privateTest(`{
           me {
             email
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -294,17 +266,12 @@ describe('UserModule (e2e)', () => {
         .then(() => {});
     });
     it('should have new email', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .set('X-JWT', jwtToken)
-        .send({
-          query: `{
+      return privateTest(`{
           me {
             email
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -326,17 +293,13 @@ describe('UserModule (e2e)', () => {
       verificationCode = verification.code;
     });
     it('should verify email', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
           verifyEmail(input: { code: "${verificationCode}" }) {
             error
             ok
           }
         }
-        `,
-        })
+        `)
         .expect(200)
         .expect((res) => {
           const {
@@ -351,17 +314,13 @@ describe('UserModule (e2e)', () => {
         });
     });
     it('should fail on wrong verification code', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `mutation {
+      return publicTest(`mutation {
         verifyEmail(input: { code: "xxxxxx" }) {
           error
           ok
         }
       }
-      `,
-        })
+      `)
         .expect(200)
         .expect((res) => {
           const {
