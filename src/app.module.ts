@@ -9,6 +9,7 @@ import { JwtModule } from './jwt/jwt.module';
 import { MailModule } from './mail/mail.module';
 import { Category } from './restaurants/entities/category.entity';
 import { Restaurant } from './restaurants/entities/restaurant.entity';
+import { RestaurantsModule } from './restaurants/restaurants.module';
 import { User } from './users/entities/user.entity';
 import { Verification } from './users/entities/verification.entity';
 import { UsersModule } from './users/users.module';
@@ -48,6 +49,7 @@ import { UsersModule } from './users/users.module';
       context: ({ req }) => ({ user: req['user'] }),
     }),
     UsersModule,
+    RestaurantsModule,
     JwtModule.forRoot({
       privateKey: process.env.PRIVATE_KEY,
     }),
