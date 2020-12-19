@@ -48,6 +48,7 @@ import { UsersModule } from './users/users.module';
       autoSchemaFile: true,
       context: ({ req }) => ({ user: req['user'] }),
     }),
+    AuthModule,
     UsersModule,
     RestaurantsModule,
     JwtModule.forRoot({
