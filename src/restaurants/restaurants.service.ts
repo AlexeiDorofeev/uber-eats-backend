@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EditProfileOutput } from 'src/users/dtos/edit-profile.dto';
 import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
@@ -8,11 +7,11 @@ import { CategoryInput, CategoryOutput } from './dtos/category.dto';
 import { CreateRestaurantInput, CreateRestaurantOutput } from './dtos/create-restaurant.dto';
 import { DeleteRestaurantInput, DeleteRestaurantOutput } from './dtos/delete-restaurant.dto';
 import { EditRestaurantInput, EditRestaurantOutput } from './dtos/edit-restaurant.dto';
+import { RestaurantInput, RestaurantOutput } from './dtos/restaurant.dto';
 import { RestaurantsInput, RestaurantsOutput } from './dtos/restaurants.dto';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
-import { CategoryResolver } from './restaurants.resolver';
 
 @Injectable()
 export class RestaurantService {
@@ -175,6 +174,27 @@ export class RestaurantService {
       return {
         ok: false,
         error: 'Could not load restaurants.',
+      };
+    }
+  }
+
+  async findRestaurantById({ restaurantId }: RestaurantInput): Promise<RestaurantOutput> {
+    try {
+      const restaurant = await this.restaurants.findOne(restaurantId);
+      if (!restaurant) {
+        return {
+          ok: false,
+          error: 'Restaurant not found.',
+        };
+      }
+      return {
+        ok: true,
+        restaurant,
+      };
+    } catch {
+      return {
+        ok: true,
+        error: 'Could not find restaurant.',
       };
     }
   }
