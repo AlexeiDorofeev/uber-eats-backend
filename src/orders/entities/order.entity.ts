@@ -1,6 +1,5 @@
 import { Field, Float, InputType, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { CoreEntity } from 'src/common/entities/core.entity';
-import { RestaurantOutput } from 'src/restaurants/dtos/restaurant.dto';
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -15,7 +14,7 @@ export enum OrderStatus {
 
 registerEnumType(OrderStatus, { name: 'OrderStatus' });
 
-@InputType('RestaurantInputType', { isAbstract: true })
+@InputType('OrderInputType', { isAbstract: true })
 @ObjectType()
 @Entity()
 export class Order extends CoreEntity {
@@ -39,9 +38,9 @@ export class Order extends CoreEntity {
   @JoinTable()
   dishes: Dish[];
 
-  @Column()
-  @Field(() => Float)
-  total: number;
+  @Column({ nullable: true })
+  @Field(() => Float, { nullable: true })
+  total?: number;
 
   @Column({ type: 'enum', enum: OrderStatus })
   @Field(() => OrderStatus)
