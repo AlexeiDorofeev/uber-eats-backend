@@ -1,4 +1,4 @@
-import { Args, Int, Mutation, Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Parent, ResolveField, Resolver, Query } from '@nestjs/graphql';
 import { AuthUser } from 'src/auth/auth-user.decorator';
 import { Role } from 'src/auth/role.decorator';
 import { EditProfileOutput } from 'src/users/dtos/edit-profile.dto';
@@ -50,17 +50,17 @@ export class RestaurantResolver {
     return this.restaurantService.deleteRestaurant(owner, deleteRestaurantInput);
   }
 
-  @Mutation(() => RestaurantsOutput)
+  @Query(() => RestaurantsOutput)
   restaurants(@Args('input') restaurantsInput: RestaurantsInput): Promise<RestaurantsOutput> {
     return this.restaurantService.allRestaurants(restaurantsInput);
   }
 
-  @Mutation(() => RestaurantOutput)
+  @Query(() => RestaurantOutput)
   restaurant(@Args('input') restaurantInput: RestaurantInput): Promise<RestaurantsOutput> {
     return this.restaurantService.findRestaurantById(restaurantInput);
   }
 
-  @Mutation(() => SearchRestaurantOutput)
+  @Query(() => SearchRestaurantOutput)
   searchRestaurant(
     @Args('input') searchRestaurantInput: SearchRestaurantInput
   ): Promise<SearchRestaurantOutput> {
@@ -77,12 +77,12 @@ export class CategoryResolver {
     return this.restaurantService.countRestaurants(category);
   }
 
-  @Mutation(() => AllCategoriesOutput)
+  @Query(() => AllCategoriesOutput)
   allCategories(): Promise<AllCategoriesOutput> {
     return this.restaurantService.allCategories();
   }
 
-  @Mutation(() => CategoryOutput)
+  @Query(() => CategoryOutput)
   category(@Args('input') categoryInput: CategoryInput): Promise<CategoryOutput> {
     return this.restaurantService.findCategoryBySlug(categoryInput);
   }
