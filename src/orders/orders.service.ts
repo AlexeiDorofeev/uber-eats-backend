@@ -98,12 +98,14 @@ export class OrderService {
         orders = await this.orders.find({
           where: {
             customer: user,
+            ...(status && { status }),
           },
         });
       } else if (user.role === UserRole.Delivery) {
         orders = await this.orders.find({
           where: {
             driver: user,
+            ...(status && { status }),
           },
         });
       } else if (user.role === UserRole.Owner) {
@@ -113,8 +115,14 @@ export class OrderService {
           },
           relations: ['orders'],
         });
+
         orders = restaurants.map((restaurant) => restaurant.orders).flat(1);
+
+        if (status) {
+          orders = orders.filter((order) => order.status === status);
+        }
       }
+
       return {
         ok: true,
         orders,
@@ -122,7 +130,7 @@ export class OrderService {
     } catch {
       return {
         ok: false,
-        error: 'Could not get orders.',
+        error: 'Could not get orders',
       };
     }
   }

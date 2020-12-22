@@ -4,7 +4,7 @@ import { User } from 'src/users/entities/user.entity';
 import { ILike, Repository } from 'typeorm';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { CategoryInput, CategoryOutput } from './dtos/category.dto';
-import { CreateDishInput } from './dtos/create-dish.dto';
+import { CreateDishInput, CreateDishOutput } from './dtos/create-dish.dto';
 import { CreateRestaurantInput, CreateRestaurantOutput } from './dtos/create-restaurant.dto';
 import { DeleteDishInput, DeleteDishOutput } from './dtos/delete-dish.dto';
 import { DeleteRestaurantInput, DeleteRestaurantOutput } from './dtos/delete-restaurant.dto';
@@ -232,7 +232,7 @@ export class RestaurantService {
     }
   }
 
-  async createDish(owner: User, createDishInput: CreateDishInput): Promise<CreateRestaurantOutput> {
+  async createDish(owner: User, createDishInput: CreateDishInput): Promise<CreateDishOutput> {
     try {
       const restaurant = await this.restaurants.findOne(createDishInput.restaurantId);
       if (!restaurant) {
@@ -242,6 +242,7 @@ export class RestaurantService {
         };
       }
       if (owner.id !== restaurant.ownerId) {
+        console.log(owner.id, restaurant.ownerId);
         return {
           ok: false,
           error: 'You can not do that.',
