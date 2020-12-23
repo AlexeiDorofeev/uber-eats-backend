@@ -11,7 +11,12 @@ import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
 import { OrderStatus } from '../orders/entities/order.entity';
-import { NEW_PENDING_ORDER, PUB_SUB } from 'src/common/common.constants';
+import {
+  NEW_COOKED_ORDER,
+  NEW_ORDER_UPDATE,
+  NEW_PENDING_ORDER,
+  PUB_SUB,
+} from 'src/common/common.constants';
 import { PubSub } from 'graphql-subscriptions';
 
 @Injectable()
@@ -86,7 +91,9 @@ export class OrderService {
           items: orderItems,
         })
       );
-      await this.pubSub.publish(NEW_PENDING_ORDER, { pendingOrders: order });
+      await this.pubSub.publish(NEW_PENDING_ORDER, {
+        pendingOrders: { order, ownerId: restaurant.ownerId },
+      });
       return {
         ok: true,
       };
@@ -221,12 +228,17 @@ export class OrderService {
           error: 'You can not do that.',
         };
       }
-      await this.orders.save([
-        {
-          id: orderId,
-          status,
-        },
-      ]);
+      await this.orders.save({
+        id: orderId,
+        status,
+      });
+      const newOrder = { ...order, status };
+      if (user.role === UserRole.Owner) {
+        if (status === OrderStatus.Cooked) {
+          await this.pubSub.publish(NEW_COOKED_ORDER, { cookedOrders: { ...order, status } });
+        }
+      }
+      await this.pubSub.publish(NEW_ORDER_UPDATE, { orderUpdates: newOrder });
       return {
         ok: true,
       };
