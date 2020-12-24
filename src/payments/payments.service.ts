@@ -36,6 +36,7 @@ export class PaymentsService {
           error: 'You are not allowed to do this.',
         };
       }
+
       await this.payments.save(
         this.payments.create({
           transactionId,
@@ -43,6 +44,13 @@ export class PaymentsService {
           restaurant,
         })
       );
+
+      restaurant.isPromoted = true;
+      const date = new Date();
+      date.setDate(date.getDate() + 7);
+      restaurant.promotedUntil = date;
+      this.restaurants.save(restaurant);
+
       return {
         ok: true,
       };
