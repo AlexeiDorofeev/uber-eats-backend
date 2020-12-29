@@ -8,23 +8,23 @@ import { Restaurant } from './restaurant.entity';
 @ObjectType()
 @Entity()
 export class Category extends CoreEntity {
-  @Field(() => String)
+  @Field((type) => String)
   @Column({ unique: true })
   @IsString()
   @Length(5)
   name: string;
 
-  @Field(() => String, { nullable: true })
+  @Field((type) => String, { nullable: true })
   @Column({ nullable: true })
   @IsString()
   coverImg: string;
 
-  @Field(() => String)
+  @Field((type) => String)
   @Column({ unique: true })
   @IsString()
   slug: string;
 
-  @Field(() => [Restaurant])
-  @OneToMany(() => Restaurant, (restaurant) => restaurant.category)
+  @Field((type) => [Restaurant], { nullable: true })
+  @OneToMany((type) => Restaurant, (restaurant) => restaurant.category)
   restaurants: Restaurant[];
 }
